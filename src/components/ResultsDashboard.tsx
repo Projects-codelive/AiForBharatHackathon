@@ -277,7 +277,7 @@ export function ResultsDashboard({ data, cached, onForceRefresh, isRefreshing }:
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {llmAnalysis.routes.map((route: any, i: number) => (
-                            <RouteCard key={i} {...route} />
+                            <RouteCard key={i} repoUrl={data.repoUrl} routeIndex={i} {...route} />
                         ))}
                     </div>
                 </div>

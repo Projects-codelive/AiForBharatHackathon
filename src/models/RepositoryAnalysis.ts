@@ -56,6 +56,18 @@ const LLMAnalysisSchema = new Schema(
     { _id: false }
 );
 
+// Stores the per-route deep analysis result so repeat views are instant
+// Using an array (not Map) so MongoDB dot-notation writes with slash/dash keys never break
+const RouteAnalysisCacheEntrySchema = new Schema(
+    {
+        route: { type: String, required: true },   // e.g. "/smart-cultivation"
+        flowVisualization: String,
+        executionTrace: String,
+        cachedAt: { type: Date, default: Date.now },
+    },
+    { _id: false }
+);
+
 const RepoMetadataSchema = new Schema(
     {
         fullName: String,
@@ -88,23 +100,7 @@ const RepoStatusSchema = new Schema(
     { _id: false }
 );
 
-const TechStackCategorySchema = new Schema(
-    {
-        source: String,
-        raw: String,
-        dependencies: [String],
-        devDependencies: [String],
-    },
-    { _id: false }
-);
 
-const TechStackSchema = new Schema(
-    {
-        frontend: { type: TechStackCategorySchema },
-        backend: { type: TechStackCategorySchema },
-    },
-    { _id: false }
-);
 
 // ─── Main document ────────────────────────────────────────────────────────────
 
@@ -128,6 +124,12 @@ export interface IRepositoryAnalysis extends Document {
         routes: unknown[];
     };
     analyzedAt: Date;
+    routeAnalysisCache: Array<{
+        route: string;
+        flowVisualization: string;
+        executionTrace: string;
+        cachedAt: Date;
+    }>;
 }
 
 const RepositoryAnalysisSchema = new Schema<IRepositoryAnalysis>(
@@ -147,6 +149,11 @@ const RepositoryAnalysisSchema = new Schema<IRepositoryAnalysis>(
         keyFileContents: [KeyFileSchema],
         llmAnalysis: { type: LLMAnalysisSchema },
         analyzedAt: { type: Date, default: Date.now },
+        // Array of per-route deep-analysis results (array avoids MongoDB dot-notation key issues)
+        routeAnalysisCache: {
+            type: [RouteAnalysisCacheEntrySchema],
+            default: [],
+        },
     },
     { timestamps: true }
 );

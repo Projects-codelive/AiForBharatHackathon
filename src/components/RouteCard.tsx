@@ -1,19 +1,28 @@
 /**
  * RouteCard — displays a single route with method badge and LLM-generated details.
  */
+import Link from "next/link";
 import { methodColor, lifecycleColor } from "@/lib/utils";
 
 interface RouteCardProps {
+    repoUrl: string;
     path: string;
     method: string;
     functionality: string;
     contribution: string;
     lifecycleRole: string;
+    routeIndex: number;  // 0-based index — used to alternate API keys on the server
 }
 
-export function RouteCard({ path, method, functionality, contribution, lifecycleRole }: RouteCardProps) {
+export function RouteCard({ repoUrl, path, method, functionality, contribution, lifecycleRole, routeIndex }: RouteCardProps) {
+    const encodedRepoUrl = encodeURIComponent(repoUrl);
+    const encodedPath = encodeURIComponent(path);
+
     return (
-        <div className="group flex flex-col gap-3 rounded-2xl border border-white/[0.08] bg-slate-800/60 p-5 transition-all duration-200 hover:border-indigo-500/40 hover:bg-slate-800">
+        <Link
+            href={`/analyze-route?repoUrl=${encodedRepoUrl}&route=${encodedPath}&routeIndex=${routeIndex}`}
+            className="group flex flex-col gap-3 rounded-2xl border border-white/[0.08] bg-slate-800/60 p-5 transition-all duration-200 hover:border-indigo-500/40 hover:bg-slate-800"
+        >
             {/* Header row */}
             <div className="flex flex-wrap items-center gap-2">
                 <span
@@ -51,6 +60,6 @@ export function RouteCard({ path, method, functionality, contribution, lifecycle
                     {lifecycleRole}
                 </span>
             </div>
-        </div>
+        </Link>
     );
 }

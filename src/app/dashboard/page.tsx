@@ -1,13 +1,38 @@
 /**
  * Dashboard page — protected by middleware.
  * Client component to handle form state, API calls, and result display.
+ *
+ * State is persisted to sessionStorage so navigating away (e.g., to analyze-route)
+ * and pressing Back instantly restores the last result without any API call.
  */
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { ResultsDashboard } from "@/components/ResultsDashboard";
+
+const SESSION_KEY = "dashboard_state";
+
+interface DashboardState {
+    url: string;
+    result: { cached: boolean; data: any } | null;
+}
+
+function saveToSession(state: DashboardState) {
+    try {
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
+    } catch { /* quota exceeded — ignore */ }
+}
+
+function loadFromSession(): DashboardState | null {
+    try {
+        const raw = sessionStorage.getItem(SESSION_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+}
 
 export default function DashboardPage() {
     const { data: session } = useSession();
@@ -17,6 +42,23 @@ export default function DashboardPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [result, setResult] = useState<{ cached: boolean; data: any } | null>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [hydrated, setHydrated] = useState(false);
+
+    // ── On mount: restore last session state so Back navigation is instant ──
+    useEffect(() => {
+        const saved = loadFromSession();
+        if (saved) {
+            if (saved.url) setUrl(saved.url);
+            if (saved.result) setResult(saved.result);
+        }
+        setHydrated(true);
+    }, []);
+
+    // ── Persist to sessionStorage whenever url or result changes ────────────
+    useEffect(() => {
+        if (!hydrated) return;
+        saveToSession({ url, result });
+    }, [url, result, hydrated]);
 
     async function runAnalysis(forceRefresh = false) {
         if (!url.trim()) return;
@@ -180,7 +222,7 @@ export default function DashboardPage() {
                 )}
 
                 {/* ── Empty state ── */}
-                {!loading && !result && !error && (
+                {!loading && !result && !error && hydrated && (
                     <div className="flex flex-col items-center justify-center py-24 text-center text-slate-600">
                         <div className="mb-4 text-6xl opacity-30">🔍</div>
                         <p className="text-lg font-medium text-slate-500">Enter a GitHub URL above to start</p>

@@ -463,3 +463,27 @@ export async function getKeyFileContents(
 
     return results;
 }
+
+export async function getSpecificFiles(
+    owner: string,
+    repo: string,
+    paths: string[],
+    token?: string
+): Promise<KeyFile[]> {
+    const octokit = createOctokit(token);
+    const results: KeyFile[] = [];
+
+    // Fetch up to 10 files directly with no truncation limits
+    for (const path of paths.slice(0, 10)) {
+        try {
+            const { data } = await octokit.repos.getContent({ owner, repo, path });
+            if ("content" in data && data.content) {
+                const content = Buffer.from(data.content, "base64").toString("utf-8");
+                results.push({ path, content });
+            }
+        } catch (e) {
+            console.error(`Failed to fetch specific file ${path}:`, e);
+        }
+    }
+    return results;
+}
